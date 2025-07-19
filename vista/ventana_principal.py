@@ -1,3 +1,4 @@
+# vista/ventana_principal.py
 import tkinter as tk
 from tkinter import ttk, messagebox
 
@@ -5,87 +6,117 @@ class VentanaPrincipal(tk.Tk):
     def __init__(self):
         super().__init__()
         self.title("Pérdida de energía en tuberías")
-        self.geometry("1400x950")
+        self.geometry("1450x950")
         self.controlador = None
         self.segmentos_cargados = False
 
-        self.boton_segmentos = tk.Button(self, text="Ingresar cantidad de segmentos", width=30, command=self.abrir_segmentos)
-        self.boton_segmentos.place(x=1100, y=20)
+        # Botones de ingreso/edición
+        tk.Button(self, text="Ingresar segmentos", width=30, command=self.abrir_segmentos).place(x=1100, y=20)
+        self.bt_editar = tk.Button(self, text="Editar segmentos", width=30, command=self.editar_segmentos)
+        self.bt_editar.place(x=1100, y=60)
+        self.bt_editar.config(state="disabled")
 
-        self.boton_segmentos.place(x=1100, y=20)
-
-        self.boton_editar_segmentos = tk.Button(self, text="Editar segmentos", width=30, command=self.editar_segmentos)
-        self.boton_editar_segmentos.place(x=1100, y=60)
-        self.boton_editar_segmentos.config(state="disabled")
-
+        # Canvas para dibujar segmentos
         self.canvas = tk.Canvas(self, width=1000, height=450, bg="white")
         self.canvas.place(x=20, y=20)
 
-        self.crear_panel_datos_generales()
+        # Panel de datos del sistema
+        self._crear_panel_sistema()
+
+        # Panel de selección de métodos y botón calcular
+        self._crear_panel_metodos()
 
     def abrir_segmentos(self):
         if self.controlador:
             self.controlador.abrir_ventana_segmentos()
 
-    def crear_panel_datos_generales(self):
-        panel = tk.Frame(self)
-        panel.place(x=1100, y=80)
-
-        self.inputs_generales = {}
-
-        campos = [
-            ("Altura del sistema (m):", "altura"),
-            ("Caudal del sistema (L/s):", "caudal"),
-            ("Altura de rugosidad (mm):", "rugosidad"),
-            ("Viscosidad cinética (x10⁻⁶ m²/s):", "viscosidad")
-        ]
-
-        for i, (texto, clave) in enumerate(campos):
-            tk.Label(panel, text=texto).grid(row=i, column=0, sticky="w", pady=5)
-            entrada = tk.Entry(panel, width=25)
-            entrada.insert(0, "0")
-            entrada.config(state="disabled")
-            entrada.grid(row=i, column=1, pady=5)
-            self.inputs_generales[clave] = entrada
-
-        self.boton_calcular = tk.Button(panel, text="Calcular", width=25, command=self.ejecutar_calculo_si_hay_controlador)
-        self.boton_calcular.grid(row=len(campos), column=0, columnspan=2, pady=15)
-        self.boton_calcular.config(state="normal")
-
-    def habilitar_datos_sistema(self):
-        for entry in self.inputs_generales.values():
-            entry.config(state="normal")
-        self.segmentos_cargados = True
-        self.boton_editar_segmentos.config(state="normal")  # Esto lo habilita correctamente
-
-    def ejecutar_calculo_si_hay_controlador(self):
-        if not self.segmentos_cargados:
-            messagebox.showwarning("Advertencia", "Primero ingrese el número de segmentos")
-            return
+    def editar_segmentos(self):
         if self.controlador:
-            self.controlador.realizar_calculo()
+            self.controlador.abrir_edicion_segmentos()
+
+    def habilitar_post_segmentos(self):
+        # Se llama desde el controlador tras ingresar/editar segmentos
+        self.segmentos_cargados = True
+        self.bt_editar.config(state="normal")
+        # Habilitar entradas del sistema
+        for e in self.inputs_sis.values():
+            e.config(state="normal")
 
     def dibujar_segmentos(self, segmentos):
+        # Borra dibujo previo
         self.canvas.delete("all")
         if not segmentos:
             return
 
-        ancho_canvas = int(self.canvas["width"])
-        alto_canvas = int(self.canvas["height"])
-        total_longitud = sum(seg.longitud for seg in segmentos)
+        ancho = int(self.canvas["width"])
+        alto = int(self.canvas["height"])
+        total_L = sum(seg.longitud for seg in segmentos)
         x0, y0 = 20, 20
 
         for seg in segmentos:
-            proporcion = seg.longitud / total_longitud
-            dx = proporcion * (ancho_canvas - 40)
-            dy = proporcion * (alto_canvas - 40)
+            propor = seg.longitud / total_L
+            dx = propor * (ancho - 40)
+            dy = propor * (alto - 40)
             x1, y1 = x0 + dx, y0 + dy
+
+            # Dibuja línea y nodos
             self.canvas.create_line(x0, y0, x1, y1, width=3, fill="blue")
             self.canvas.create_oval(x0-3, y0-3, x0+3, y0+3, fill="black")
-            self.canvas.create_text((x0+x1)/2, (y0+y1)/2 - 10, text=f"Segmento {seg.numero}")
+            self.canvas.create_text((x0+x1)/2, (y0+y1)/2 - 10, text=f"Segmento {seg.numero}", font=("Arial", 9))
+
             x0, y0 = x1, y1
 
-        self.canvas.create_oval(x1-3, y1-3, x1+3, y1+3, fill='red')
+        # Punto final
+        self.canvas.create_oval(x1-3, y1-3, x1+3, y1+3, fill="red")
+
+    def _crear_panel_sistema(self):
+        panel = tk.LabelFrame(self, text="Datos del sistema", padx=10, pady=10)
+        panel.place(x=1100, y=120)
+        self.inputs_sis = {}
+        campos = [
+            ("Caudal (L/s):", "caudal"),
+            ("Rugosidad (mm):", "rugosidad"),
+            ("Viscosidad cinética (x10⁻⁶ m²/s):", "viscosidad"),
+            ("Altura (m):", "altura")
+        ]
+        for i, (texto, clave) in enumerate(campos):
+            tk.Label(panel, text=texto).grid(row=i, column=0, sticky="w", pady=5)
+            e = tk.Entry(panel, width=20)
+            e.insert(0, "0")
+            e.config(state="disabled")
+            e.grid(row=i, column=1, pady=5)
+            self.inputs_sis[clave] = e
+
+    def _crear_panel_metodos(self):
+        panel = tk.LabelFrame(self, text="Métodos", padx=10, pady=10)
+        panel.place(x=1100, y=320)
+        self.var_hazzen = tk.BooleanVar()
+        self.var_darcy = tk.BooleanVar()
+        tk.Checkbutton(panel, text="Hazen-Williams", variable=self.var_hazzen).pack(anchor="w")
+        tk.Checkbutton(panel, text="Darcy-Weisbach", variable=self.var_darcy).pack(anchor="w")
+        tk.Button(panel, text="Calcular", command=self._calcular).pack(pady=10)
+
+    def _calcular(self):
+        if not self.segmentos_cargados:
+            messagebox.showwarning("Advertencia", "Primero ingrese los segmentos")
+            return
+
+        # Leer selección de métodos
+        usar_h = self.var_hazzen.get()
+        usar_d = self.var_darcy.get()
+
+        # Leer datos del sistema
+        try:
+            q = float(self.inputs_sis["caudal"].get())
+            k = float(self.inputs_sis["rugosidad"].get())
+            nu = float(self.inputs_sis["viscosidad"].get())
+            H = float(self.inputs_sis["altura"].get())
+        except ValueError:
+            messagebox.showerror("Error", "Datos del sistema inválidos")
+            return
+
+        # Llamada al controlador
+        self.controlador.realizar_calculo(usar_h, usar_d, q, k, nu, H)
 
     def mostrar_tabla_hazzen(self, resultados, total_hf):
         if hasattr(self, 'tabla_hazzen'):
@@ -107,7 +138,3 @@ class VentanaPrincipal(tk.Tk):
 
         self.tabla_hazzen.insert("", "end", values=["TOTAL", "", "", "", "", round(total_hf, 4)])
         self.tabla_hazzen.pack(expand=True, fill="both")
-
-    def editar_segmentos(self):
-        if self.controlador:
-            self.controlador.abrir_edicion_segmentos()
