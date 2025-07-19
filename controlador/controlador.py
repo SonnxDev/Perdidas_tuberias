@@ -2,6 +2,7 @@ from modelo.segmento import Segmento
 from vista.ventana_segmentos import VentanaSegmentos
 from vista.ventana_editar import VentanaEditar
 from calculos.hazzen import calcular_hf_hazzen
+from calculos.darcy import calcular_segmento_darcy
 
 class Controlador:
     def __init__(self, vista):
@@ -29,33 +30,32 @@ class Controlador:
         # Habilita edición y panel de sistema
         self.vista.habilitar_post_segmentos()
 
-    # (más adelante) calcula según selección de métodos
-    def realizar_calculo(self, usar_hazzen, usar_darcy, q_l_s, rugosidad_mm, viscosidad_cin, altura_m):
-        self.metodo_hazzen_activado = usar_hazzen
-        self.metodo_darcy_activado = usar_darcy
-        self.q = q_l_s
-        self.k = rugosidad_mm
-        self.nu = viscosidad_cin * 1e-6  # convertir a m²/s
-        self.h = altura_m
+    def realizar_calculo(self, usar_hazzen, usar_darcy, q, k, nu, h):
+        if not self.segmentos:
+            return
 
-        # Por ahora: solo Hazzen, lo demás vendrá después
         if usar_hazzen:
-            resultados = []
-            total_hf = 0
-
+            resultados_hazzen = []
+            total_hf_hazzen = 0
             for seg in self.segmentos:
-                if None in (seg.diametro, seg.longitud, seg.coeficiente):
-                    continue
-                from calculos.hazzen import calcular_hf_hazzen
-                hf = calcular_hf_hazzen(q_l_s, seg.diametro, seg.longitud, seg.coeficiente)
-                total_hf += hf
-                resultados.append({
+                hf = calcular_hf_hazzen(q, seg.diametro, seg.longitud, seg.coeficiente)
+                total_hf_hazzen += hf
+                resultados_hazzen.append({
                     "segmento": seg.numero,
-                    "caudal": q_l_s,
+                    "caudal": q,
                     "coef": seg.coeficiente,
                     "diam": seg.diametro,
                     "long": seg.longitud,
                     "hf": hf
                 })
+            self.vista.mostrar_tabla_hazzen(resultados_hazzen, total_hf_hazzen)
 
-            self.vista.mostrar_tabla_hazzen(resultados, total_hf)
+        if usar_darcy:
+            resultados_darcy = []
+            total_hf_darcy = 0
+            for seg in self.segmentos:
+                resultado = calcular_segmento_darcy(q, seg, k, nu)
+                resultado["segmento"] = seg.numero
+                resultados_darcy.append(resultado)
+                total_hf_darcy += resultado["hf"]
+            self.vista.mostrar_tabla_darcy(resultados_darcy, total_hf_darcy)

@@ -138,3 +138,24 @@ class VentanaPrincipal(tk.Tk):
 
         self.tabla_hazzen.insert("", "end", values=["TOTAL", "", "", "", "", round(total_hf, 4)])
         self.tabla_hazzen.pack(expand=True, fill="both")
+
+    def mostrar_tabla_darcy(self, resultados, total_hf):
+        if hasattr(self, 'tabla_darcy'):
+            self.tabla_darcy.destroy()
+
+        marco = tk.LabelFrame(self, text="Darcy-Weisbach", padx=10, pady=10)
+        marco.place(x=20, y=730, width=1340, height=200)
+
+        columnas = ["Segmento", "Número de Reynolds", "f", "Vc", "Tipo de flujo", "Tipo de tubería", "hf"]
+        self.tabla_darcy = ttk.Treeview(marco, columns=columnas, show="headings", height=6)
+        for col in columnas:
+            self.tabla_darcy.heading(col, text=col)
+            self.tabla_darcy.column(col, anchor="center", width=180)
+
+        for r in resultados:
+            self.tabla_darcy.insert("", "end", values=[
+                r["segmento"], r["reynolds"], r["f"], r["vc"], r["tipo_flujo"], r["tipo_tubo"], r["hf"]
+            ])
+
+        self.tabla_darcy.insert("", "end", values=["TOTAL", "", "", "", "", "", round(total_hf, 4)])
+        self.tabla_darcy.pack(expand=True, fill="both")
