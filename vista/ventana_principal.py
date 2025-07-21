@@ -1,30 +1,45 @@
-# vista/ventana_principal.py
 import tkinter as tk
 from tkinter import ttk, messagebox
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+from graficador import graficar_segmentos
+import matplotlib.pyplot as plt
 
 class VentanaPrincipal(tk.Tk):
     def __init__(self):
         super().__init__()
         self.title("Pérdida de energía en tuberías")
-        self.geometry("1450x950")
+        self.geometry("1650x1080")
+
         self.controlador = None
         self.segmentos_cargados = False
+        self.canvas_grafica_hazzen = None
+        self.canvas_grafica_darcy = None
+
+        # Frame desplazable para resultados
+        self.frame_resultados = tk.Frame(self)
+        self.frame_resultados.place(x=20, y=20, width=1250, height=1000)
+
+        self.canvas_scroll = tk.Canvas(self.frame_resultados)
+        self.scrollbar = tk.Scrollbar(self.frame_resultados, orient="vertical", command=self.canvas_scroll.yview)
+        self.scrollbar.pack(side="right", fill="y")
+
+        self.scrollable_frame = tk.Frame(self.canvas_scroll)
+        self.scrollable_frame.bind(
+            "<Configure>",
+            lambda e: self.canvas_scroll.configure(scrollregion=self.canvas_scroll.bbox("all"))
+        )
+        self.canvas_scroll.create_window((0, 0), window=self.scrollable_frame, anchor="nw")
+        self.canvas_scroll.configure(yscrollcommand=self.scrollbar.set)
+        self.canvas_scroll.pack(side="left", fill="both", expand=True)
+
+        self._crear_panel_sistema()
+        self._crear_panel_metodos()
 
         # Botones de ingreso/edición
-        tk.Button(self, text="Ingresar segmentos", width=30, command=self.abrir_segmentos).place(x=1100, y=20)
+        tk.Button(self, text="Ingresar segmentos", width=30, command=self.abrir_segmentos).place(x=1300, y=20)
         self.bt_editar = tk.Button(self, text="Editar segmentos", width=30, command=self.editar_segmentos)
-        self.bt_editar.place(x=1100, y=60)
+        self.bt_editar.place(x=1300, y=60)
         self.bt_editar.config(state="disabled")
-
-        # Canvas para dibujar segmentos
-        self.canvas = tk.Canvas(self, width=1000, height=450, bg="white")
-        self.canvas.place(x=20, y=20)
-
-        # Panel de datos del sistema
-        self._crear_panel_sistema()
-
-        # Panel de selección de métodos y botón calcular
-        self._crear_panel_metodos()
 
     def abrir_segmentos(self):
         if self.controlador:
@@ -35,43 +50,14 @@ class VentanaPrincipal(tk.Tk):
             self.controlador.abrir_edicion_segmentos()
 
     def habilitar_post_segmentos(self):
-        # Se llama desde el controlador tras ingresar/editar segmentos
         self.segmentos_cargados = True
         self.bt_editar.config(state="normal")
-        # Habilitar entradas del sistema
         for e in self.inputs_sis.values():
             e.config(state="normal")
 
-    def dibujar_segmentos(self, segmentos):
-        # Borra dibujo previo
-        self.canvas.delete("all")
-        if not segmentos:
-            return
-
-        ancho = int(self.canvas["width"])
-        alto = int(self.canvas["height"])
-        total_L = sum(seg.longitud for seg in segmentos)
-        x0, y0 = 20, 20
-
-        for seg in segmentos:
-            propor = seg.longitud / total_L
-            dx = propor * (ancho - 40)
-            dy = propor * (alto - 40)
-            x1, y1 = x0 + dx, y0 + dy
-
-            # Dibuja línea y nodos
-            self.canvas.create_line(x0, y0, x1, y1, width=3, fill="blue")
-            self.canvas.create_oval(x0-3, y0-3, x0+3, y0+3, fill="black")
-            self.canvas.create_text((x0+x1)/2, (y0+y1)/2 - 10, text=f"Segmento {seg.numero}", font=("Arial", 9))
-
-            x0, y0 = x1, y1
-
-        # Punto final
-        self.canvas.create_oval(x1-3, y1-3, x1+3, y1+3, fill="red")
-
     def _crear_panel_sistema(self):
         panel = tk.LabelFrame(self, text="Datos del sistema", padx=10, pady=10)
-        panel.place(x=1100, y=120)
+        panel.place(x=1300, y=120)
         self.inputs_sis = {}
         campos = [
             ("Caudal (L/s):", "caudal"),
@@ -89,11 +75,17 @@ class VentanaPrincipal(tk.Tk):
 
     def _crear_panel_metodos(self):
         panel = tk.LabelFrame(self, text="Métodos", padx=10, pady=10)
-        panel.place(x=1100, y=320)
+        panel.place(x=1300, y=340)
         self.var_hazzen = tk.BooleanVar()
         self.var_darcy = tk.BooleanVar()
-        tk.Checkbutton(panel, text="Hazen-Williams", variable=self.var_hazzen).pack(anchor="w")
-        tk.Checkbutton(panel, text="Darcy-Weisbach", variable=self.var_darcy).pack(anchor="w")
+        self.var_ver_hazzen = tk.BooleanVar()
+        self.var_ver_darcy = tk.BooleanVar()
+
+        tk.Checkbutton(panel, text="Usar Hazen-Williams", variable=self.var_hazzen).pack(anchor="w")
+        tk.Checkbutton(panel, text="Usar Darcy-Weisbach", variable=self.var_darcy).pack(anchor="w")
+        tk.Checkbutton(panel, text="Ver gráfica Hazen", variable=self.var_ver_hazzen).pack(anchor="w")
+        tk.Checkbutton(panel, text="Ver gráfica Darcy", variable=self.var_ver_darcy).pack(anchor="w")
+
         tk.Button(panel, text="Calcular", command=self._calcular).pack(pady=10)
 
     def _calcular(self):
@@ -101,11 +93,14 @@ class VentanaPrincipal(tk.Tk):
             messagebox.showwarning("Advertencia", "Primero ingrese los segmentos")
             return
 
-        # Leer selección de métodos
+        for widget in self.scrollable_frame.winfo_children():
+            widget.destroy()
+
         usar_h = self.var_hazzen.get()
         usar_d = self.var_darcy.get()
+        ver_h = self.var_ver_hazzen.get()
+        ver_d = self.var_ver_darcy.get()
 
-        # Leer datos del sistema
         try:
             q = float(self.inputs_sis["caudal"].get())
             k = float(self.inputs_sis["rugosidad"].get())
@@ -115,15 +110,64 @@ class VentanaPrincipal(tk.Tk):
             messagebox.showerror("Error", "Datos del sistema inválidos")
             return
 
-        # Llamada al controlador
-        self.controlador.realizar_calculo(usar_h, usar_d, q, k, nu, H)
+        resultados_hazzen = []
+        resultados_darcy = []
+
+        if usar_h:
+            resultados_hazzen = self.controlador.calcular_hazzen(q)
+            if resultados_hazzen:
+                total_hf_hazzen = sum(r["hf"] for r in resultados_hazzen)
+                self.mostrar_tabla_hazzen(resultados_hazzen, total_hf_hazzen)
+
+        if usar_d:
+            resultados_darcy = self.controlador.calcular_darcy(q, k, nu)
+            if resultados_darcy:
+                total_hf_darcy = sum(r["hf"] for r in resultados_darcy)
+                self.mostrar_tabla_darcy(resultados_darcy, total_hf_darcy)
+
+        if ver_h:
+            for r in resultados_hazzen:
+                if r["hf"] < 0 or r["hf"] > H:
+                    messagebox.showerror("Sistema no admisible", f"Hazen-Williams: segmento {r['segmento']} tiene hf fuera de rango.")
+                    return
+
+        if ver_d:
+            for r in resultados_darcy:
+                if r["hf"] < 0 or r["hf"] > H:
+                    messagebox.showerror("Sistema no admisible", f"Darcy-Weisbach: segmento {r['segmento']} tiene hf fuera de rango.")
+                    return
+
+        # Limpiar gráficos previos
+        if self.canvas_grafica_hazzen:
+            self.canvas_grafica_hazzen.get_tk_widget().destroy()
+            self.canvas_grafica_hazzen = None
+        if self.canvas_grafica_darcy:
+            self.canvas_grafica_darcy.get_tk_widget().destroy()
+            self.canvas_grafica_darcy = None
+
+        try:
+            if ver_h:
+                fig_h = graficar_segmentos(self.controlador.segmentos, resultados_hazzen, H, "Hazen-Williams")
+                self.canvas_grafica_hazzen = FigureCanvasTkAgg(fig_h, master=self.scrollable_frame)
+                self.canvas_grafica_hazzen.draw()
+                self.canvas_grafica_hazzen.get_tk_widget().pack(pady=10)
+
+            if ver_d:
+                fig_d = graficar_segmentos(self.controlador.segmentos, resultados_darcy, H, "Darcy-Weisbach")
+                self.canvas_grafica_darcy = FigureCanvasTkAgg(fig_d, master=self.scrollable_frame)
+                self.canvas_grafica_darcy.draw()
+                self.canvas_grafica_darcy.get_tk_widget().pack(pady=10)
+
+        except ValueError as err:
+            messagebox.showerror("Error físico", str(err))
+            return
 
     def mostrar_tabla_hazzen(self, resultados, total_hf):
         if hasattr(self, 'tabla_hazzen'):
             self.tabla_hazzen.destroy()
 
-        marco = tk.LabelFrame(self, text="Hazen-Williams", padx=10, pady=10)
-        marco.place(x=20, y=520, width=1340, height=200)
+        marco = tk.LabelFrame(self.scrollable_frame, text="Hazen-Williams", padx=10, pady=10)
+        marco.pack(pady=10, fill="x")
 
         columnas = ["Segmento", "Caudal (L/s)", "Coeficiente", "Diámetro (m)", "Longitud (m)", "hf"]
         self.tabla_hazzen = ttk.Treeview(marco, columns=columnas, show="headings", height=6)
@@ -143,8 +187,8 @@ class VentanaPrincipal(tk.Tk):
         if hasattr(self, 'tabla_darcy'):
             self.tabla_darcy.destroy()
 
-        marco = tk.LabelFrame(self, text="Darcy-Weisbach", padx=10, pady=10)
-        marco.place(x=20, y=730, width=1340, height=200)
+        marco = tk.LabelFrame(self.scrollable_frame, text="Darcy-Weisbach", padx=10, pady=10)
+        marco.pack(pady=10, fill="x")
 
         columnas = ["Segmento", "Número de Reynolds", "f", "Vc", "Tipo de flujo", "Tipo de tubería", "hf"]
         self.tabla_darcy = ttk.Treeview(marco, columns=columnas, show="headings", height=6)
