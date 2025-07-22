@@ -1,12 +1,13 @@
 import tkinter as tk
 from tkinter import ttk, messagebox
+from PIL import Image, ImageTk  # Asegúrate de tener Pillow instalado
 
 class VentanaSegmentos(tk.Toplevel):
     def __init__(self, controlador):
         super().__init__()
         self.controlador = controlador
         self.title("Ingresar segmentos")
-        self.geometry("500x450")
+        self.geometry("800x650")  # Ventana más ancha para acomodar la imagen a la derecha
         self.entries = []
         self._crear_widgets()
 
@@ -16,14 +17,29 @@ class VentanaSegmentos(tk.Toplevel):
         self.combo.pack()
         self.combo.bind("<<ComboboxSelected>>", self._crear_tabla)
 
-        self.marco = tk.Frame(self)
-        self.marco.pack(pady=10, fill="x", expand=True)
+        # Contenedor horizontal para tabla e imagen
+        contenedor = tk.Frame(self)
+        contenedor.pack(pady=10, fill="both", expand=True)
 
+        # Marco de tabla a la izquierda
+        self.marco = tk.Frame(contenedor)
+        self.marco.pack(side="left", padx=20, fill="x", expand=True)
+
+        # Imagen a la derecha
+        try:
+            imagen = Image.open("recursos/imagen_segmentos.png").resize((350, 300))
+            self.imagen_tk = ImageTk.PhotoImage(imagen)
+            label_img = tk.Label(contenedor, image=self.imagen_tk)
+            label_img.pack(side="right", padx=20, pady=10)
+        except Exception as e:
+            print("No se pudo cargar la imagen:", e)
+
+        # Botón aceptar
         tk.Button(self, text="Aceptar", command=self._aceptar).pack(pady=10)
 
     def _crear_tabla(self, _=None):
-        # limpia
-        for w in self.marco.winfo_children(): w.destroy()
+        for w in self.marco.winfo_children():
+            w.destroy()
         self.entries.clear()
 
         n = int(self.combo.get())

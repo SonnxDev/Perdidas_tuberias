@@ -3,6 +3,7 @@ from tkinter import ttk, messagebox
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from graficador import graficar_segmentos
 import matplotlib.pyplot as plt
+from PIL import Image, ImageTk
 
 class VentanaPrincipal(tk.Tk):
     def __init__(self):
@@ -14,6 +15,7 @@ class VentanaPrincipal(tk.Tk):
         self.segmentos_cargados = False
         self.canvas_grafica_hazzen = None
         self.canvas_grafica_darcy = None
+        self._colocar_logo()
 
         # Frame desplazable para resultados
         self.frame_resultados = tk.Frame(self)
@@ -40,6 +42,15 @@ class VentanaPrincipal(tk.Tk):
         self.bt_editar = tk.Button(self, text="Editar segmentos", width=30, command=self.editar_segmentos)
         self.bt_editar.place(x=1300, y=60)
         self.bt_editar.config(state="disabled")
+
+    def _colocar_logo(self):
+        logo = Image.open("recursos/logo_programa.png").convert("RGBA")
+        logo = logo.resize((120, 120))  # Ajusta tamaño como prefieras
+        logo_tk = ImageTk.PhotoImage(logo)
+
+        self.label_logo = tk.Label(self, image=logo_tk, bg="white")
+        self.label_logo.image = logo_tk  # Evita que se borre por el recolector
+        self.label_logo.place(x=1520, y=820)  # Posición en esquina inferior derecha
 
     def abrir_segmentos(self):
         if self.controlador:
