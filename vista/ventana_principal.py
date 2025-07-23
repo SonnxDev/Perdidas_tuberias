@@ -9,12 +9,12 @@ def ruta_recurso(relativa):
     base = getattr(sys, '_MEIPASS', os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
     return os.path.join(base, relativa)
 
-
 class VentanaPrincipal(tk.Tk):
     def __init__(self, controlador):
         super().__init__()
         self.title("Pérdida de energía en tuberías")
-        self.geometry("1650x1080")
+        self.geometry("1366x768")
+        self.resizable(False, False)
 
         self.controlador = controlador
         self.segmentos_cargados = False
@@ -24,7 +24,7 @@ class VentanaPrincipal(tk.Tk):
 
         # Frame desplazable para resultados
         self.frame_resultados = tk.Frame(self)
-        self.frame_resultados.place(x=20, y=20, width=1250, height=1000)
+        self.frame_resultados.place(x=20, y=20, width=950, height=720)
 
         self.canvas_scroll = tk.Canvas(self.frame_resultados)
         self.scrollbar = tk.Scrollbar(self.frame_resultados, orient="vertical", command=self.canvas_scroll.yview)
@@ -44,32 +44,30 @@ class VentanaPrincipal(tk.Tk):
         self._crear_botones()
 
     def _crear_botones(self):
-        # Botones de ingreso/edición
-        tk.Button(self, text="Ingresar segmentos", width=30, command=self.abrir_segmentos).place(x=1300, y=20)
-        self.bt_editar = tk.Button(self, text="Editar segmentos", width=30, command=self.editar_segmentos)
-        self.bt_editar.place(x=1300, y=60)
+        x = 1000  # Más cerca del borde derecho
+        tk.Button(self, text="Ingresar segmentos", width=28, command=self.abrir_segmentos).place(x=x, y=20)
+        self.bt_editar = tk.Button(self, text="Editar segmentos", width=28, command=self.editar_segmentos)
+        self.bt_editar.place(x=x, y=60)
         self.bt_editar.config(state="disabled")
 
-        # Este botón se crea solo si el controlador ya está definido
         if self.controlador:
-            tk.Button(self, text="Calcular distancias por hf", width=30,
-                      command=self.controlador.abrir_ventana_calcular_distancias).place(x=1300, y=100)
+            tk.Button(self, text="Calcular distancias por hf", width=28,
+                      command=self.controlador.abrir_ventana_calcular_distancias).place(x=x, y=100)
 
     def _colocar_logo(self):
-        # Ruta segura al logo empaquetado
-        logo_path = ruta_recurso("recursos/logo_programa.png")
-        logo = Image.open(logo_path).convert("RGBA")
-        logo = logo.resize((120, 120))
+        try:
+            logo_path = ruta_recurso("recursos/logo_programa.png")
+            logo = Image.open(logo_path).convert("RGBA").resize((100, 100))
+            logo_tk = ImageTk.PhotoImage(logo)
+            self.label_logo = tk.Label(self, image=logo_tk, bg="white")
+            self.label_logo.image = logo_tk
+            self.label_logo.place(x=1040, y=580)
 
-        logo_tk = ImageTk.PhotoImage(logo)
-        self.label_logo = tk.Label(self, image=logo_tk, bg="white")
-        self.label_logo.image = logo_tk  # Previene recolección de basura
-        self.label_logo.place(x=1320, y=620)  # Ajusta según tu interfaz
-
-        # Firma del autor debajo del logo
-        self.label_firma = tk.Label(self, text="Camargo Meza, Bryan Miguel", font=("Arial", 10, "italic"), bg="white",
-                                    fg="gray30")
-        self.label_firma.place(x=1320, y=750)  # Justo debajo del logo
+            self.label_firma = tk.Label(self, text="Camargo Meza, Bryan Miguel", font=("Arial", 9, "italic"),
+                                        bg="white", fg="gray30")
+            self.label_firma.place(x=1040, y=690)
+        except Exception as e:
+            print("No se pudo cargar el logo:", e)
 
     def abrir_segmentos(self):
         if self.controlador:
@@ -87,7 +85,7 @@ class VentanaPrincipal(tk.Tk):
 
     def _crear_panel_sistema(self):
         panel = tk.LabelFrame(self, text="Datos del sistema", padx=10, pady=10)
-        panel.place(x=1300, y=140)
+        panel.place(x=1000, y=140)
         self.inputs_sis = {}
         campos = [
             ("Caudal (L/s):", "caudal"),
@@ -105,7 +103,7 @@ class VentanaPrincipal(tk.Tk):
 
     def _crear_panel_metodos(self):
         panel = tk.LabelFrame(self, text="Métodos", padx=10, pady=10)
-        panel.place(x=1300, y=340)
+        panel.place(x=1000, y=300)
         self.var_hazzen = tk.BooleanVar()
         self.var_darcy = tk.BooleanVar()
         self.var_ver_hazzen = tk.BooleanVar()
@@ -115,7 +113,6 @@ class VentanaPrincipal(tk.Tk):
         tk.Checkbutton(panel, text="Usar Darcy-Weisbach", variable=self.var_darcy).pack(anchor="w")
         tk.Checkbutton(panel, text="Ver gráfica Hazen", variable=self.var_ver_hazzen).pack(anchor="w")
         tk.Checkbutton(panel, text="Ver gráfica Darcy", variable=self.var_ver_darcy).pack(anchor="w")
-
         tk.Button(panel, text="Calcular", command=self._calcular).pack(pady=10)
 
     def _calcular(self):
