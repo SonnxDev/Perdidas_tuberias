@@ -3,6 +3,7 @@ from vista.ventana_segmentos import VentanaSegmentos
 from vista.ventana_editar import VentanaEditar
 from calculos.hazzen import calcular_hf_hazzen
 from calculos.darcy import calcular_segmento_darcy
+from vista.ventana_calcular_distancias import VentanaCalcularDistancias
 
 class Controlador:
     def __init__(self, vista):
@@ -81,3 +82,6 @@ class Controlador:
             resultado["segmento"] = seg.numero
             resultados_darcy.append(resultado)
         return resultados_darcy
+
+    def abrir_ventana_calcular_distancias(self):
+        VentanaCalcularDistancias(self)

@@ -6,12 +6,12 @@ import matplotlib.pyplot as plt
 from PIL import Image, ImageTk
 
 class VentanaPrincipal(tk.Tk):
-    def __init__(self):
+    def __init__(self, controlador):
         super().__init__()
         self.title("Pérdida de energía en tuberías")
         self.geometry("1650x1080")
 
-        self.controlador = None
+        self.controlador = controlador
         self.segmentos_cargados = False
         self.canvas_grafica_hazzen = None
         self.canvas_grafica_darcy = None
@@ -36,12 +36,19 @@ class VentanaPrincipal(tk.Tk):
 
         self._crear_panel_sistema()
         self._crear_panel_metodos()
+        self._crear_botones()
 
+    def _crear_botones(self):
         # Botones de ingreso/edición
         tk.Button(self, text="Ingresar segmentos", width=30, command=self.abrir_segmentos).place(x=1300, y=20)
         self.bt_editar = tk.Button(self, text="Editar segmentos", width=30, command=self.editar_segmentos)
         self.bt_editar.place(x=1300, y=60)
         self.bt_editar.config(state="disabled")
+
+        # ✅ Este botón se crea solo si el controlador ya está definido
+        if self.controlador:
+            tk.Button(self, text="Calcular distancias por hf", width=30,
+                      command=self.controlador.abrir_ventana_calcular_distancias).place(x=1300, y=100)
 
     def _colocar_logo(self):
         logo = Image.open("recursos/logo_programa.png").convert("RGBA")
