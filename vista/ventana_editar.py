@@ -1,6 +1,11 @@
 import tkinter as tk
 from tkinter import ttk, messagebox
 from PIL import Image, ImageTk  # Asegúrate de tener Pillow instalado
+import sys, os
+
+def ruta_recurso(relativa):
+    base = getattr(sys, '_MEIPASS', os.path.dirname(os.path.abspath(__file__)))
+    return os.path.join(base, relativa)
 
 class VentanaEditar(tk.Toplevel):
     def __init__(self, controlador, segmentos):
@@ -28,6 +33,7 @@ class VentanaEditar(tk.Toplevel):
         cols = ["Diámetro (m)", "Longitud (m)", "Coef. Hazzen"]
         for j, c in enumerate(cols):
             tk.Label(self.marco, text=c, borderwidth=1, relief="solid").grid(row=0, column=j, padx=2)
+
         # Filas
         for i in range(len(self.segmentos)):
             fila = []
@@ -37,14 +43,15 @@ class VentanaEditar(tk.Toplevel):
                 fila.append(e)
             self.entries.append(fila)
 
-        # Imagen decorativa a la derecha
+        # Imagen decorativa a la derecha (ruta segura)
         try:
-            imagen = Image.open("recursos/imagen_segmentos.png").resize((350, 300))
+            imagen_path = ruta_recurso("recursos/imagen_segmentos.png")
+            imagen = Image.open(imagen_path).resize((350, 300))
             self.imagen_tk = ImageTk.PhotoImage(imagen)
             label_img = tk.Label(contenedor, image=self.imagen_tk)
             label_img.pack(side="right", padx=20, pady=10)
-        except:
-            pass  # En caso de que no exista la imagen
+        except Exception as e:
+            print("No se pudo cargar la imagen:", e)
 
         # Botón guardar
         tk.Button(self, text="Guardar cambios", command=self._aceptar).pack(pady=10)

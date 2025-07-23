@@ -1,6 +1,11 @@
 import tkinter as tk
 from tkinter import ttk, messagebox
 from PIL import Image, ImageTk  # Asegúrate de tener Pillow instalado
+import sys, os
+
+def ruta_recurso(relativa):
+    base = getattr(sys, '_MEIPASS', os.path.dirname(os.path.abspath(__file__)))
+    return os.path.join(base, relativa)
 
 class VentanaSegmentos(tk.Toplevel):
     def __init__(self, controlador):
@@ -13,7 +18,7 @@ class VentanaSegmentos(tk.Toplevel):
 
     def _crear_widgets(self):
         tk.Label(self, text="Número de segmentos (1–10):").pack(pady=5)
-        self.combo = ttk.Combobox(self, values=list(range(1,11)), state="readonly")
+        self.combo = ttk.Combobox(self, values=list(range(1, 11)), state="readonly")
         self.combo.pack()
         self.combo.bind("<<ComboboxSelected>>", self._crear_tabla)
 
@@ -25,9 +30,10 @@ class VentanaSegmentos(tk.Toplevel):
         self.marco = tk.Frame(contenedor)
         self.marco.pack(side="left", padx=20, fill="x", expand=True)
 
-        # Imagen a la derecha
+        # Imagen a la derecha (ruta segura)
         try:
-            imagen = Image.open("recursos/imagen_segmentos.png").resize((350, 300))
+            imagen_path = ruta_recurso("recursos/imagen_segmentos.png")
+            imagen = Image.open(imagen_path).resize((350, 300))
             self.imagen_tk = ImageTk.PhotoImage(imagen)
             label_img = tk.Label(contenedor, image=self.imagen_tk)
             label_img.pack(side="right", padx=20, pady=10)
