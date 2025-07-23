@@ -76,7 +76,7 @@
  [],
  False,
  False,
- 1753253948,
+ 1753283186,
  [('runw.exe',
    'C:\\Users\\Gabriel\\PycharmProjects\\Perdidas_tuberias\\.venv\\Lib\\site-packages\\PyInstaller\\bootloader\\Windows-64bit-intel\\runw.exe',
    'EXECUTABLE')],

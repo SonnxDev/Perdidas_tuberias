@@ -62,10 +62,6 @@ class VentanaPrincipal(tk.Tk):
             self.label_logo = tk.Label(self, image=logo_tk, bg="white")
             self.label_logo.image = logo_tk
             self.label_logo.place(x=1040, y=580)
-
-            self.label_firma = tk.Label(self, text="Camargo Meza, Bryan Miguel", font=("Arial", 9, "italic"),
-                                        bg="white", fg="gray30")
-            self.label_firma.place(x=1040, y=690)
         except Exception as e:
             print("No se pudo cargar el logo:", e)
 
@@ -174,16 +170,20 @@ class VentanaPrincipal(tk.Tk):
 
         try:
             if ver_h:
+                wrapper_h = tk.Frame(self.scrollable_frame)
+                wrapper_h.pack(anchor="center", pady=10)
                 fig_h = graficar_segmentos(self.controlador.segmentos, resultados_hazzen, H, "Hazen-Williams")
-                self.canvas_grafica_hazzen = FigureCanvasTkAgg(fig_h, master=self.scrollable_frame)
+                self.canvas_grafica_hazzen = FigureCanvasTkAgg(fig_h, master=wrapper_h)
                 self.canvas_grafica_hazzen.draw()
-                self.canvas_grafica_hazzen.get_tk_widget().pack(pady=10)
+                self.canvas_grafica_hazzen.get_tk_widget().pack()
 
             if ver_d:
+                wrapper_d = tk.Frame(self.scrollable_frame)
+                wrapper_d.pack(anchor="center", pady=10)
                 fig_d = graficar_segmentos(self.controlador.segmentos, resultados_darcy, H, "Darcy-Weisbach")
-                self.canvas_grafica_darcy = FigureCanvasTkAgg(fig_d, master=self.scrollable_frame)
+                self.canvas_grafica_darcy = FigureCanvasTkAgg(fig_d, master=wrapper_d)
                 self.canvas_grafica_darcy.draw()
-                self.canvas_grafica_darcy.get_tk_widget().pack(pady=10)
+                self.canvas_grafica_darcy.get_tk_widget().pack()
 
         except ValueError as err:
             messagebox.showerror("Error físico", str(err))
@@ -193,20 +193,24 @@ class VentanaPrincipal(tk.Tk):
         if hasattr(self, 'tabla_hazzen'):
             self.tabla_hazzen.destroy()
 
-        marco = tk.LabelFrame(self.scrollable_frame, text="Hazen-Williams", padx=10, pady=10)
-        marco.pack(pady=10, fill="x")
+        wrapper = tk.Frame(self.scrollable_frame)
+        wrapper.pack(anchor="center", pady=10)
+
+        marco = tk.LabelFrame(wrapper, text="Hazen-Williams", padx=10, pady=10)
+        marco.pack(fill="x")
 
         columnas = ["Segmento", "Caudal (L/s)", "Coeficiente", "Diámetro (m)", "Longitud (m)", "hf"]
         self.tabla_hazzen = ttk.Treeview(marco, columns=columnas, show="headings", height=6)
+
+        ancho_col = 140 if self.winfo_screenwidth() <= 1366 else 110
         for col in columnas:
             self.tabla_hazzen.heading(col, text=col)
-            self.tabla_hazzen.column(col, anchor="center", width=200)
+            self.tabla_hazzen.column(col, anchor="center", width=ancho_col)
 
         for r in resultados:
             self.tabla_hazzen.insert("", "end", values=[
                 r["segmento"], r["caudal"], r["coef"], r["diam"], r["long"], r["hf"]
             ])
-
         self.tabla_hazzen.insert("", "end", values=["TOTAL", "", "", "", "", round(total_hf, 4)])
         self.tabla_hazzen.pack(expand=True, fill="both")
 
@@ -214,19 +218,24 @@ class VentanaPrincipal(tk.Tk):
         if hasattr(self, 'tabla_darcy'):
             self.tabla_darcy.destroy()
 
-        marco = tk.LabelFrame(self.scrollable_frame, text="Darcy-Weisbach", padx=10, pady=10)
-        marco.pack(pady=10, fill="x")
+        wrapper = tk.Frame(self.scrollable_frame)
+        wrapper.pack(anchor="center", pady=10)
+
+        marco = tk.LabelFrame(wrapper, text="Darcy-Weisbach", padx=10, pady=10)
+        marco.pack(fill="x")
 
         columnas = ["Segmento", "Número de Reynolds", "f", "Vc", "Tipo de flujo", "Tipo de tubería", "hf"]
         self.tabla_darcy = ttk.Treeview(marco, columns=columnas, show="headings", height=6)
+
+        ancho_col = 130 if self.winfo_screenwidth() <= 1366 else 105
         for col in columnas:
             self.tabla_darcy.heading(col, text=col)
-            self.tabla_darcy.column(col, anchor="center", width=180)
+            self.tabla_darcy.column(col, anchor="center", width=ancho_col)
 
         for r in resultados:
             self.tabla_darcy.insert("", "end", values=[
-                r["segmento"], r["reynolds"], r["f"], r["vc"], r["tipo_flujo"], r["tipo_tubo"], r["hf"]
+                r["segmento"], r["reynolds"], r["f"], r["vc"],
+                r["tipo_flujo"], r["tipo_tubo"], r["hf"]
             ])
-
         self.tabla_darcy.insert("", "end", values=["TOTAL", "", "", "", "", "", round(total_hf, 4)])
         self.tabla_darcy.pack(expand=True, fill="both")
