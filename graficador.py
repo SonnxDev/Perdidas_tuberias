@@ -50,6 +50,7 @@ def graficar_segmentos(segmentos, resultados, H, metodo):
     ax.plot(x_points, y_points, color="red", linewidth=1, linestyle="-.")
 
     ax.set_title(f"Perfil energético - {metodo}")
+    ax.plot([0, x_points[-1]], [H, 0], color="black", linestyle="--", linewidth=1.5, label="Referencia diagonal")
     ax.set_xlabel("Distancia (m)")
     ax.set_ylabel("Energía (m)")
     ax.grid(True)
