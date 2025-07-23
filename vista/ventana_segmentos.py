@@ -4,7 +4,7 @@ from PIL import Image, ImageTk  # Asegúrate de tener Pillow instalado
 import sys, os
 
 def ruta_recurso(relativa):
-    base = getattr(sys, '_MEIPASS', os.path.dirname(os.path.abspath(__file__)))
+    base = getattr(sys, '_MEIPASS', os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
     return os.path.join(base, relativa)
 
 class VentanaSegmentos(tk.Toplevel):

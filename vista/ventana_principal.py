@@ -2,13 +2,13 @@ import tkinter as tk
 from tkinter import ttk, messagebox
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from graficador import graficar_segmentos
-import matplotlib.pyplot as plt
 from PIL import Image, ImageTk
 import sys, os
 
 def ruta_recurso(relativa):
-    base = getattr(sys, '_MEIPASS', os.path.dirname(os.path.abspath(__file__)))
+    base = getattr(sys, '_MEIPASS', os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
     return os.path.join(base, relativa)
+
 
 class VentanaPrincipal(tk.Tk):
     def __init__(self, controlador):
@@ -55,13 +55,6 @@ class VentanaPrincipal(tk.Tk):
             tk.Button(self, text="Calcular distancias por hf", width=30,
                       command=self.controlador.abrir_ventana_calcular_distancias).place(x=1300, y=100)
 
-    import sys, os
-    from PIL import Image, ImageTk
-
-    def ruta_recurso(relativa):
-        base = getattr(sys, "_MEIPASS", os.path.dirname(os.path.abspath(__file__)))
-        return os.path.join(base, relativa)
-
     def _colocar_logo(self):
         # Ruta segura al logo empaquetado
         logo_path = ruta_recurso("recursos/logo_programa.png")
@@ -71,12 +64,12 @@ class VentanaPrincipal(tk.Tk):
         logo_tk = ImageTk.PhotoImage(logo)
         self.label_logo = tk.Label(self, image=logo_tk, bg="white")
         self.label_logo.image = logo_tk  # Previene recolección de basura
-        self.label_logo.place(x=1520, y=820)  # Ajusta según tu interfaz
+        self.label_logo.place(x=1320, y=620)  # Ajusta según tu interfaz
 
         # Firma del autor debajo del logo
         self.label_firma = tk.Label(self, text="Camargo Meza, Bryan Miguel", font=("Arial", 10, "italic"), bg="white",
                                     fg="gray30")
-        self.label_firma.place(x=1520, y=950)  # Justo debajo del logo
+        self.label_firma.place(x=1320, y=750)  # Justo debajo del logo
 
     def abrir_segmentos(self):
         if self.controlador:
